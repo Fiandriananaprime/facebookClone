@@ -44,17 +44,4 @@ export const SOCKET_URL =
   (typeof window === "undefined" ? "http://localhost:5000" : window.location.origin);
 export const SOCKET_PATH = trim(import.meta.env.VITE_SOCKET_PATH) || "/socket.io";
 
-export const getApiHeaders = (customHeaders = {}) => {
-  const headers = { ...customHeaders };
-
-  try {
-    const host = new URL(API_BASE_URL).hostname;
-    if (host.includes("ngrok")) {
-      headers["ngrok-skip-browser-warning"] = "true";
-    }
-  } catch (_error) {
-    // Ignore invalid URL parse and keep default headers.
-  }
-
-  return headers;
-};
+export const getApiHeaders = (customHeaders = {}) => ({ ...customHeaders });

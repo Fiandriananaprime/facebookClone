@@ -1,8 +1,7 @@
-﻿const express = require("express");
+const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcrypt");
 const http = require("http");
-const https = require("https");
 const { Server } = require("socket.io");
 const { Pool } = require("pg");
 require("dotenv").config();
@@ -11,8 +10,6 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const FRONTEND_URL = process.env.FRONTEND_URL || "";
 const PUBLIC_URL = process.env.PUBLIC_URL || "";
-const NGROK_API_URL = process.env.NGROK_API_URL || "http://127.0.0.1:4040/api/tunnels";
-const AUTO_DETECT_NGROK = process.env.AUTO_DETECT_NGROK !== "false";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -25,58 +22,9 @@ FRONTEND_URL.split(",")
   .filter(Boolean)
   .forEach((origin) => allowedOrigins.add(origin));
 
-const ngrokRegex = /^https:\/\/[a-zA-Z0-9-]+\.ngrok(-free)?\.(app|dev)$/;
-
 const isAllowedOrigin = (origin) => {
   if (!origin) return true;
-  return allowedOrigins.has(origin) || ngrokRegex.test(origin);
-};
-
-const getJson = (url) =>
-  new Promise((resolve, reject) => {
-    const client = url.startsWith("https://") ? https : http;
-    const req = client.get(url, (res) => {
-      let raw = "";
-      res.on("data", (chunk) => {
-        raw += chunk;
-      });
-      res.on("end", () => {
-        if (res.statusCode < 200 || res.statusCode >= 300) {
-          reject(new Error(`HTTP ${res.statusCode}`));
-          return;
-        }
-
-        try {
-          resolve(JSON.parse(raw));
-        } catch (error) {
-          reject(error);
-        }
-      });
-    });
-
-    req.setTimeout(1500, () => req.destroy(new Error("Timeout")));
-    req.on("error", reject);
-  });
-
-const detectNgrokPublicUrl = async () => {
-  if (!AUTO_DETECT_NGROK) return "";
-
-  try {
-    const payload = await getJson(NGROK_API_URL);
-    const tunnels = Array.isArray(payload?.tunnels) ? payload.tunnels : [];
-
-    const selectedTunnel =
-      tunnels.find(
-        (tunnel) =>
-          tunnel?.proto === "https" &&
-          typeof tunnel?.config?.addr === "string" &&
-          tunnel.config.addr.endsWith(`:${PORT}`),
-      ) || tunnels.find((tunnel) => tunnel?.proto === "https");
-
-    return typeof selectedTunnel?.public_url === "string" ? selectedTunnel.public_url : "";
-  } catch (_error) {
-    return "";
-  }
+  return allowedOrigins.has(origin);
 };
 
 const corsOptions = {
@@ -369,12 +317,6 @@ server.listen(PORT, () => {
   const manualPublicUrl = PUBLIC_URL.trim();
   if (manualPublicUrl) {
     console.log(`Serveur public: ${manualPublicUrl}`);
-    return;
   }
-
-  detectNgrokPublicUrl().then((detectedUrl) => {
-    if (detectedUrl) {
-      console.log(`Serveur public (auto): ${detectedUrl}`);
-    }
-  });
 });
+

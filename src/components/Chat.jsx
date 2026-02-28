@@ -65,7 +65,7 @@ function Chat() {
         }
       } catch (error) {
         console.error("Fetch users error:", error);
-        setUsersError("Erreur reseau lors du chargement des contacts. Verifie ton URL ngrok.");
+        setUsersError("Erreur reseau lors du chargement des contacts. Verifie ton URL Render/API.");
       } finally {
         setUsersLoading(false);
       }
